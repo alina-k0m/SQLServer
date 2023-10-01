@@ -190,7 +190,6 @@ on S.REP_OFFICE = O.OFFICE;
 
 --3.27.	Найти всех покупателей и их заказы.
 select C.COMPANY,
-		O.MFR,
 		O.PRODUCT,
 		P.DESCRIPTION,
 		O.QTY,
@@ -212,7 +211,7 @@ select C.CUST_NUM,
 		O.ORDER_DATE
 from CUSTOMERS C join ORDERS O
 on C.CUST_NUM = O.CUST
-where O.ORDER_DATE between '2007-12-12' and '2008-02-02';
+where O.ORDER_DATE between '2007-11-11' and '2008-02-02';
 
 --3.30.	Найти покупателей, у которых есть заказы выше определенной суммы.
 select C.CUST_NUM,
@@ -223,25 +222,83 @@ where O.AMOUNT > 10000;
 
 --3.31.	Найти заказы, которые оформляли менеджеры из региона EAST.
 select O.ORDER_NUM,
+		S.EMPL_NUM,
 		S.NAME,
-		OFS.REGION
+		OFFS.REGION
 from ORDERS O join SALESREPS S
-on O.ORDER_NUM = S.NAME
-join OFFICES OFS
-on S.NAME = OFS.OFFICE
-where OFS.REGION like 'East%';
+on O.REP = S.EMPL_NUM
+join OFFICES OFFS
+on S.REP_OFFICE = OFFS.OFFICE
+where OFFS.REGION like 'East%';
 
 --3.32.	Найти товары, которые купили покупатели с кредитным лимитом больше 40000.
+--select *
+--from ORDERS O join CUSTOMERS C
+--on C.CUST_NUM = O.CUST
+--where C.CREDIT_LIMIT > 40000;
+select distinct P,MFR_ID,
+		P.PRODUCT_ID,
+		P.DESCRIPTION,
+		P.PRICE
+from ORDERS O join PRODUCTS P
+on O.MFR = P.MFR_ID and O.PRODUCT = P.PRODUCT_ID
+join CUSTOMERS C
+on C.CUST_NUM = O.CUST
+where C.CREDIT_LIMIT > 40000;
 
 
 --3.33.	Найти всех сотрудников из региона EAST и все их заказы.
+select * 
+from SALESREPS S join OFFICES OFFS
+on S.REP_OFFICE = OFFS.OFFICE
+join ORDERS O
+on O.REP = S.EMPL_NUM
+where REGION = 'Eastern';
 
-
---3.34.	Найти сотрудников, которые не оформили ни одного заказа.
-
+--???3.34.	Найти сотрудников, которые не оформили ни одного заказа.
+--select * 
+--from SALESREPS S join ORDERS O
+--on O.REP = S.MANAGER
+--where QUOTA is null;
+select SALESREPS.EMPL_NUM,
+		ORDERS.ORDER_NUM
+from SALESREPS left join ORDERS
+on SALESREPS.EMPL_NUM = ORDERS.REP
+where ORDERS.ORDER_NUM is null;
 
 --3.35.	Найти сотрудников одного возраста.
 select S1.NAME, S1.AGE, S2.NAME, S2.AGE
 from SALESREPS as S1 join SALESREPS as S2
 on S1.AGE = S2.AGE and S1.NAME <> S2.NAME; -- <> - не равно
+
+--4.	Поместить результирующие наборы из запроса 3.30 в локальную временную таблицу.
+select C.CUST_NUM,
+		O.AMOUNT
+into #kom_table1
+from CUSTOMERS C join ORDERS O
+on C.CUST_NUM = O.CUST
+where O.AMOUNT > 10000;
+
+--5.	Просмотреть данные из локальной временной таблицы.
+select * from #kom_table1;
+
+--6.	Поместить результирующие наборы из запроса 3.31 в глобальную временную таблицу.
+select O.ORDER_NUM,
+		S.EMPL_NUM,
+		S.NAME,
+		OFFS.REGION
+into ##kom_table2
+from ORDERS O join SALESREPS S
+on O.REP = S.MANAGER
+join OFFICES OFFS
+on S.REP_OFFICE = OFFS.OFFICE
+where OFFS.REGION like 'East%';
+
+--7.	Просмотреть данные из глобальных временных таблиц.
+select * from ##kom_table2;
+
+--8.	Написать скрипт из аналогичных запросов к базе данных по варианту. В качестве комментария указать условие запроса.
+
+
+--9.	Продемонстрировать оба скрипта преподавателю.
 
