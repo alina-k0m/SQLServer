@@ -257,7 +257,8 @@ select C.CUST_NUM,
 from CUSTOMERS C join ORDERS O
 on C.CUST_NUM = O.CUST
 where O.AMOUNT > 10000;
-
+create index idx_COMPANY30 on CUSTOMERS(COMPANY);
+create index idx_AMOUNT_ORDER_NUM30 on ORDERS(AMOUNT) include (ORDER_NUM);
 
 --3.31.	Найти заказы, которые оформляли менеджеры из региона EAST.
 select O.ORDER_NUM,
@@ -268,18 +269,36 @@ on O.ORDER_NUM = S.NAME
 join OFFICES OFS
 on S.NAME = OFS.OFFICE
 where OFS.REGION like 'East%';
-
+create index idx_ORDER_NUM31 on ORDERS(ORDER_NUM);
+create index idx_NAME31 on SALESREPS(NAME);
+create index idx_REGION31 on OFFICES(REGION);
 
 --3.32.	Найти товары, которые купили покупатели с кредитным лимитом больше 40000.
-
+select C.COMPANY, O.ORDER_NUM, C.CREDIT_LIMIT
+from ORDERS O join CUSTOMERS C
+on C.CUST_NUM = O.CUST
+where C.CREDIT_LIMIT > 40000;
+create index idx_ORDER_NUM32 on ORDERS(ORDER_NUM);
+create index idx_CREDIT_LIMIT_COMPANY on CUSTOMERS(CREDIT_LIMIT) include (COMPANY);
 
 --3.33.	Найти всех сотрудников из региона EAST и все их заказы.
-
+select s.NAME, o.ORDER_NUM, offs.REGION
+from SALESREPS s join ORDERS o
+on O.ORDER_NUM = S.NAME
+join OFFICES offs
+on s.NAME = offs.OFFICE
+where offs.REGION like 'East%';
+create index idx_NAME33 on SALESREPS(NAME);
+create index idx_ORDER_NUM33 on ORDERS(ORDER_NUM);
+create index idx_REGION33 on OFFICES(REGION);
 
 --3.34.	Найти сотрудников, которые не оформили ни одного заказа.
-
+select * from SALESREPS
+where SALES = 0;
+create index idx_SALES_NAME on SALESREPS(SALES) include (name);
 
 --3.35.	Найти сотрудников одного возраста.
 select S1.NAME, S1.AGE, S2.NAME, S2.AGE
 from SALESREPS as S1 join SALESREPS as S2
 on S1.AGE = S2.AGE and S1.NAME <> S2.NAME; -- <> - не равно
+create index idx_AGE_NAME on SALESREPS(AGE) include (name);
