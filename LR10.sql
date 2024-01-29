@@ -305,15 +305,129 @@ DEALLOCATE office_cursor;
 
 
 --3.	Разработать локальный курсор, который выводит все сведения о товарах и их среднюю цену.
+--select * from PRODUCTS;
+DECLARE @DESCRIPTION VARCHAR(20),
+		@PRICE MONEY;
+DECLARE @AveragePrice money; -- переменная для хранения средней цены
+
+SELECT @AveragePrice = AVG(PRICE) FROM PRODUCTS;-- Вычисляем среднюю цену и сохраняем в переменную
+
+-- Создаем курсор
+DECLARE product_cursor CURSOR FOR
+SELECT DESCRIPTION, PRICE FROM PRODUCTS;
+
+OPEN product_cursor;-- Открываем курсор
+
+FETCH NEXT FROM product_cursor INTO @DESCRIPTION, @PRICE; -- Получаем первую строку данных
+
+-- Перебираем строки в цикле
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Выводим данные
+    PRINT 'Product Name: ' + @DESCRIPTION
+        + '; Price: ' + CAST(@PRICE AS nvarchar(20));
+
+    FETCH NEXT FROM product_cursor INTO @DESCRIPTION, @PRICE; -- следующая запись
+END;
+
+BEGIN
+    -- Выводим среднюю цену
+    PRINT 'Average Price: ' + CAST(@AveragePrice AS nvarchar(20));
+
+    FETCH NEXT FROM product_cursor INTO @DESCRIPTION, @PRICE; -- следующая запись
+END;
+
+CLOSE product_cursor; -- Закрываем курсор
+DEALLOCATE product_cursor; -- Освобождаем ресурсы, связанные с курсором
 
 
---4.	Разработать глобальный курсор, который выводит сведения о заказах, выполненныъ в 2008 году.
+--4.	Разработать глобальный курсор, который выводит сведения о заказах, выполненных в 2008 году.
+--select * from ORDERS;
+DECLARE @ORDER_NUM INTEGER,
+		@ORDER_DATE DATE,
+        @CUST INTEGER,
+        @REP INTEGER,
+        @MFR CHAR(3),
+		@PRODUCT CHAR(5),
+        @QTY INTEGER,
+		@AMOUNT DECIMAL(9,2);
+
+-- Объявляем курсор для выборки заказов 2008 года
+DECLARE orders_cursor CURSOR GLOBAL FOR
+SELECT ORDER_NUM, ORDER_DATE, CUST, REP, MFR, PRODUCT, QTY, AMOUNT
+FROM ORDERS
+WHERE YEAR(ORDER_DATE) = 2008;
+
+OPEN orders_cursor;-- Открываем курсор
+
+FETCH NEXT FROM orders_cursor INTO @ORDER_NUM, @ORDER_DATE, @CUST, @REP, @MFR, @PRODUCT, @QTY, @AMOUNT; -- Получаем первую строку данных
+
+-- Цикл по всем строкам
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    PRINT 'ORDER_NUM: ' + CAST(@ORDER_NUM AS nvarchar(20))
+        + '; ORDER_DATE: ' + CAST(@ORDER_DATE AS nvarchar(20))
+        + '; CUST: ' + CAST(@CUST AS nvarchar(20))
+        + '; REP: ' + CAST(@REP AS nvarchar(20))
+        + '; MFR: ' + @MFR
+        + '; PRODUCT: ' + @PRODUCT
+        + '; QTY: ' + CAST(@QTY AS nvarchar(20))
+        + '; AMOUNT: ' + CAST(@AMOUNT AS nvarchar(20));
+   
+    FETCH NEXT FROM orders_cursor INTO @ORDER_NUM, @ORDER_DATE, @CUST, @REP, @MFR, @PRODUCT, @QTY, @AMOUNT;-- Переходим к следующей записи
+END;
+
+CLOSE orders_cursor;-- Закрываем курсор
+DEALLOCATE orders_cursor;-- Снимаем выделение памяти с курсора
 
 
 --5.	Разработать статический курсор, который выводит сведения о покупателях и их заказах.
+select * from CUSTOMERS;
+select * from ORDERS;
+DECLARE CustomerOrderCursor CURSOR STATIC FOR
+SELECT c.CUST_NUM, c.COMPANY, o.ORDER_NUM, o.ORDER_DATE, o.AMOUNT
+FROM CUSTOMERS c join ORDERS o 
+on c.CUST_NUM = o.CUST
+ORDER BY c.COMPANY, o.ORDER_NUM;
+
+DECLARE @CUST_NUM INTEGER,
+		@COMPANY VARCHAR(20);
+DECLARE @ORDER_NUM INTEGER,
+		@ORDER_DATE DATE,
+		@AMOUNT DECIMAL(9,2);
+
+
+
+
+
+-- Открытие курсора
+OPEN CustomerOrderCursor;
+
+-- Извлечение первой строки
+FETCH NEXT FROM CustomerOrderCursor INTO @CustomerName, @Contact, @OrderID, @OrderDate, @Amount;
+
+-- Цикл по результирующему набору
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Здесь может быть операция с данными,
+    -- например, вывод в консоль или запись в лог
+    PRINT 'Customer Name: ' + @CustomerName
+        + ', Contact: ' + @Contact
+        + ', Order ID: ' + CAST(@OrderID AS NVARCHAR)
+        + ', Order Date: ' + CONVERT(NVARCHAR, @OrderDate, 104)
+        + ', Amount: ' + CONVERT(NVARCHAR, @Amount);
+
+    -- Переходим к следующей строке
+    FETCH NEXT FROM CustomerOrderCursor INTO @CustomerName, @Contact, @OrderID, @OrderDate, @Amount;
+END
+
+-- Закрытие курсора
+CLOSE CustomerOrderCursor;
+DEALLOCATE CustomerOrderCursor;
 
 
 --6.	Разработать динамический курсор, который обновляет данные о сотруднике в зависимости от суммы выполненных заказов (поле SALES).
+
 
 
 --7.	Продемонстрировать свойства SCROLL.
