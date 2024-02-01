@@ -1,4 +1,4 @@
-﻿﻿---
+﻿---
 ---  CREATE TABLE statements
 ---
 
@@ -382,53 +382,81 @@ DEALLOCATE orders_cursor;-- Снимаем выделение памяти с к
 
 
 --5.	Разработать статический курсор, который выводит сведения о покупателях и их заказах.
-select * from CUSTOMERS;
-select * from ORDERS;
-DECLARE CustomerOrderCursor CURSOR STATIC FOR
+--select * from CUSTOMERS;
+--select * from ORDERS;
+DECLARE customer_order_cursor CURSOR STATIC FOR -- Объявляем статический курсор
 SELECT c.CUST_NUM, c.COMPANY, o.ORDER_NUM, o.ORDER_DATE, o.AMOUNT
 FROM CUSTOMERS c join ORDERS o 
-on c.CUST_NUM = o.CUST
-ORDER BY c.COMPANY, o.ORDER_NUM;
+on c.CUST_NUM = o.CUST;
 
 DECLARE @CUST_NUM INTEGER,
 		@COMPANY VARCHAR(20);
-DECLARE @ORDER_NUM INTEGER,
-		@ORDER_DATE DATE,
-		@AMOUNT DECIMAL(9,2);
+DECLARE @ORDER_NUM5 INTEGER,
+		@ORDER_DATE5 DATE,
+		@AMOUNT5 DECIMAL(9,2);
 
+OPEN customer_order_cursor;-- Открытие курсора
 
+FETCH FROM customer_order_cursor INTO @CUST_NUM, @COMPANY, @ORDER_NUM5, @ORDER_DATE5, @AMOUNT5;-- Извлечение первой строки
 
-
-
--- Открытие курсора
-OPEN CustomerOrderCursor;
-
--- Извлечение первой строки
-FETCH NEXT FROM CustomerOrderCursor INTO @CustomerName, @Contact, @OrderID, @OrderDate, @Amount;
-
--- Цикл по результирующему набору
+-- Цикл по всем строкам
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    -- Здесь может быть операция с данными,
-    -- например, вывод в консоль или запись в лог
-    PRINT 'Customer Name: ' + @CustomerName
-        + ', Contact: ' + @Contact
-        + ', Order ID: ' + CAST(@OrderID AS NVARCHAR)
-        + ', Order Date: ' + CONVERT(NVARCHAR, @OrderDate, 104)
-        + ', Amount: ' + CONVERT(NVARCHAR, @Amount);
+    PRINT 'CUST_NUM: ' + CAST(@CUST_NUM AS NVARCHAR) 
+        + ', COMPANY: ' + @COMPANY
+        + ', ORDER_NUM: ' + CAST(@ORDER_NUM5 AS NVARCHAR)
+        + ', ORDER_DATE: ' + CONVERT(NVARCHAR, @ORDER_DATE5, 104)
+        + ', AMOUNT: ' + CONVERT(NVARCHAR, @AMOUNT5);
 
-    -- Переходим к следующей строке
-    FETCH NEXT FROM CustomerOrderCursor INTO @CustomerName, @Contact, @OrderID, @OrderDate, @Amount;
-END
+    FETCH NEXT FROM customer_order_cursor INTO @CUST_NUM, @COMPANY, @ORDER_NUM5, @ORDER_DATE5, @AMOUNT5; -- Cледующая строка
+END;
 
 -- Закрытие курсора
-CLOSE CustomerOrderCursor;
-DEALLOCATE CustomerOrderCursor;
+CLOSE customer_order_cursor;
+DEALLOCATE customer_order_cursor;
 
 
 --6.	Разработать динамический курсор, который обновляет данные о сотруднике в зависимости от суммы выполненных заказов (поле SALES).
+--select * from SALESREPS;
+DECLARE @EMPL_NUM INT,
+        @NAME6 VARCHAR(15),
+        @AGE INTEGER,
+		@REP_OFFICE INTEGER,
+		@TITLE6 VARCHAR(10),
+		@HIRE_DATE DATE,
+		@MANAGER INT,
+		@QUOTA DECIMAL(9,2),
+		@SALES6 DECIMAL(9,2);
+		
+DECLARE employee_cursor CURSOR DYNAMIC FOR -- Объявляем динамический курсор
+SELECT * FROM SALESREPS;
 
+OPEN employee_cursor
 
+FETCH FROM employee_cursor INTO @EMPL_NUM, @NAME6, @AGE, @REP_OFFICE, @TITLE6, @HIRE_DATE, @MANAGER, @QUOTA, @SALES6 -- Извлечение первой строки
+
+-- Цикл по всем строкам
+WHILE @@FETCH_STATUS = 0
+BEGIN
+  -- Обновляем сумму заказов для сотрудника
+	UPDATE SALESREPS
+	SET EMPL_NUM = @EMPL_NUM,
+		NAME = @NAME6,
+		AGE = @AGE,
+		REP_OFFICE = @REP_OFFICE,
+		TITLE = @TITLE6,
+		HIRE_DATE = @HIRE_DATE,
+		MANAGER = @MANAGER,
+		QUOTA = @QUOTA
+	WHERE SALES = @SALES6
+
+	FETCH NEXT FROM employee_cursor INTO @EMPL_NUM, @NAME6, @AGE, @REP_OFFICE, @TITLE6, @HIRE_DATE, @MANAGER, @QUOTA, @SALES6 -- Получаем следующую строку
+
+END
+
+-- Закрываем курсор и освобождаем ресурсы
+CLOSE employee_cursor
+DEALLOCATE employee_cursor
 
 --7.	Продемонстрировать свойства SCROLL.
 
