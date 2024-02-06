@@ -255,9 +255,7 @@ DECLARE @office int,
 DECLARE @name nvarchar(50),  
 		@title varchar(80),
 		@count int;  
- 
-PRINT '-------- OFFICES Personal Report --------'; 
- 
+  
 DECLARE office_cursor CURSOR FOR  
 SELECT OFFICE, CITY, REGION, SALES
 FROM OFFICES;
@@ -270,7 +268,7 @@ INTO @office, @city, @region, @sales;
 WHILE @@FETCH_STATUS = 0 
 BEGIN 
     PRINT ' ' ;
-    SELECT @message2 = '----- Personal From OFFICE: ' + ' ' + @city + ' ' + @region;
+    SELECT @message2 = 'Personal From OFFICE: ' + ' ' + @city + ' ' + @region;
  
     PRINT @message2; 
  
@@ -290,12 +288,12 @@ BEGIN
     WHILE @@FETCH_STATUS = 0 
      BEGIN 
         SELECT @message2 = '         ' +  @name + '    ' + @title;
-        PRINT @message2 ;
+        PRINT @message2;
         FETCH NEXT FROM prep_cursor INTO @name, @title ;
      END; 
     CLOSE prep_cursor;
     DEALLOCATE prep_cursor;
-       
+	    
   -- Get the next office. 
     FETCH NEXT FROM office_cursor  
     INTO @office, @city, @region, @sales;
@@ -459,4 +457,32 @@ CLOSE employee_cursor
 DEALLOCATE employee_cursor
 
 --7.	Продемонстрировать свойства SCROLL.
+DECLARE @office7 int, 
+		@city7 varchar(15),  
+		@message7 varchar(80),
+		@region7 varchar(10), 
+		@sales7 decimal(9, 2);
+DECLARE office_cursor CURSOR SCROLL
+FOR  
+SELECT OFFICE, CITY, REGION, SALES FROM OFFICES;
+PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10)) -- @@CURSOR_ROWS
+OPEN office_cursor;
+PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10))
+FETCH LAST FROM office_cursor INTO @office7, @city7, @region7, @sales7;
+PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10))
+WHILE @@FETCH_STATUS = 0 
+BEGIN 
+   SELECT @message7 = cast(@office7 as varchar(10))
+					+ ' ' + @city7 
+					+ ' ' + @region7+ ' ' 
+					+ cast(@sales7 as varchar(10));
+ 
+   PRINT @message7; 
+   FETCH PRIOR FROM office_cursor INTO @office7, @city7, @region7, @sales7;
+   PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10))
+END ;
+CLOSE office_cursor; 
+PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10))
+DEALLOCATE office_cursor;
+PRINT CAST(@@CURSOR_ROWS  AS VARCHAR(10));
 
