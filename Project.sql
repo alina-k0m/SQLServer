@@ -1,4 +1,99 @@
-﻿CREATE TABLE STUDENTS
+﻿--Лабораторная работа № 15 – СУБД – 10 часов
+
+--Итоговое задание.
+--1.	Уточнить свой вариант у преподавателя. Результатом итогового задания являются скрипт 
+--и пояснительная записка. Создание всех объектов должно быть отражено в скрипте. 
+--Проектирование должно быть отражено в пояснительной записке.
+--2.	Спроектировать базу данных по своему варианту. 
+--2.1.	Перечислить решаемые задачи. Среди решаемых задач должны быть пространственные данные 
+--и импорт-экспорт из/в XML.
+
+
+
+--2.2.	Перечислить пользователей и их возможности.
+--Server Logins (учетные записи на сервере):
+--1. sysadmin: Полный и неограниченный доступ ко всем функциям в SQL Server.
+--2. serveradmin: Могут изменять конфигурацию сервера и останавливать сервер.
+--3. securityadmin: Могут управлять учетными записями и привилегиями на уровне сервера.
+--4. processadmin: Могут управлять процессами, выполняющимися на сервере.
+--5. setupadmin: Могут управлять некоторыми опциями сервера, такими как связанные серверы.
+--6. bulkadmin: Могут выполнять массовую загрузку данных.
+--Database Users (пользователи базы данных):**
+--1. db_owner: Полный доступ ко всем ресурсам в рамках базы данных.
+--2. db_securityadmin: Могут управлять ролями и разрешениями внутри базы данных.
+--3. db_accessadmin: Могут управлять доступом пользователей к базе данных.
+--4. db_backupoperator: Могут выполнять резервное копирование.
+--5. db_ddladmin: Могут выполнять DDL-операции (Data Definition Language), но не имеют доступа к данным.
+--6. db_datawriter: Могут добавлять, удалять или изменять данные в базе данных.
+--7. db_datareader: Могут читать все данные из всех таблиц базы данных.
+--8. db_denydatawriter: Могут быть отстранены от добавления, изменения или удаления данных в базе данных.
+--9. db_denydatareader: Могут быть отстранены от чтения данных в базе данных.
+
+
+
+--2.3.	Перечислить ограничения.
+--1. PRIMARY KEY: Определяет уникальный идентификатор для каждой записи в таблице. В каждой таблице может быть только один PRIMARY KEY, который может состоять из одного или нескольких полей.
+--2. FOREIGN KEY: Устанавливает связь между полями в двух таблицах. Ограничение FOREIGN KEY на поле (или полях) ссылается на PRIMARY KEY другой таблицы и определяет связь родительского ключа с дочерним ключом.
+--3. UNIQUE: Гарантирует, что все значения в колонке уникальны. В отличие от PRIMARY KEY, можно иметь несколько UNIQUE ограничений в таблице.
+--4. CHECK: Позволяет определить диапазон допустимых значений для поля в таблице. CHECK ограничение может быть установлено для отдельного поля или для группы полей в таблице.
+--5. DEFAULT: Устанавливает значение по умолчанию, которое будет вставлено в поле, если при вставке записи значение для этого поля не указано.
+--6. INDEX: Технически не является ограничением, но часто используется в контексте обсуждения ограничений для улучшения производительности запроса через эффективный поиск данных. Однако, в отличие от ограничений, индекс не обеспечивает целостности данных.
+--7. NOT NULL: Указывает, что поле не может содержать значение NULL, то есть каждая запись должна содержать значение в данном поле.
+
+
+
+--2.4.	Спроектировать таблицы, указать типы данных и ограничения целостности.
+--2.5.	Уточнить направления дальнейшего развития. 
+--3.	Создать базу данных. 
+--4.	Настроить безопасность: 
+--4.1.	Создать логины и пользователей. 
+--создание логина
+USE [2023_Komarovskaya_Project]
+GO
+	CREATE LOGIN [NewLogin] WITH PASSWORD = N'Password123!', 
+	DEFAULT_DATABASE=[2023_Komarovskaya_Project], 
+	CHECK_EXPIRATION=OFF, --не применять политику истечения срока действия пароля
+	CHECK_POLICY=OFF --не проверять минимальное количество символов пароля
+GO
+
+--создание пользователя
+USE [DBName] --DBName - имя базы данных, к которой надо предоставить доступ пользователю
+GO
+	CREATE USER [NewUser] --NewUser - имя пользователя базы данных, которое надо создать
+	FOR LOGIN [NewLogin]
+GO
+
+--назначить роль
+USE [DBName]
+GO
+	ALTER ROLE [db_datareader] ADD MEMBER [NewUser] --предоставляет права на чтение и запись в базе данных
+GO
+	ALTER ROLE [db_datawriter] ADD MEMBER [NewUser]
+GO
+
+
+
+--4.2.	Создать роли.
+USE [2023_Komarovskaya_Project];
+GO
+	CREATE ROLE NameRole
+	AUTHORIZATION NameUser; --если не писать AUTHORIZATION NameUser, то не будет назначено владельца, владелец по умолчанию - dbo
+GO
+
+--назначить разрешения роли
+	GRANT SELECT ON [dbo].[STUDENTS] TO NameRole;
+GO
+
+--добавить пользователя в роль
+	ALTER ROLE NameRole 
+	ADD MEMBER NameOtherUser; --NameOtherUser - пользователь, который должен войти в эту роль.
+GO
+
+
+
+--5.	Создать для своей базы данных:
+--5.1.	Таблицы с тестовыми данными.
+CREATE TABLE STUDENTS
      (	STUD_ID CHAR(3) NOT NULL,
 		STUD_NAME VARCHAR(20) NOT NULL,
 		ADDRESS VARCHAR(50) NOT NULL,
@@ -6,22 +101,28 @@
 	PRIMARY KEY (STUD_ID));
 
 
+
 CREATE TABLE SUBJECTS
-     (	SUB_ID CHAR(3) NOT NULL,
+     (	SUB_ID CHAR(4) NOT NULL,
         SUB_NAME VARCHAR(20) NOT NULL,
-		VOL_MIN INT NOT NULL,
+		VOL_MIN DECIMAL(9,2),
         VOL_LK INT,
         VOL_PZ INT,
         VOL_LR INT,
+		GPA_MIN DECIMAL(9,2), --минимальный ср.балл
+	                CHECK (GPA_MIN BETWEEN 1 AND 10),
+		EXAM_GRADE_MIN DECIMAL(9,2) NOT NULL,
+	                CHECK (GRADE_MIN BETWEEN 1 AND 10),
 	PRIMARY KEY (SUB_ID));
 
 
+
 CREATE TABLE EXAM
-   (	EXAM_ID CHAR(3) NOT NULL,
-        SUB_ID CHAR(3) NOT NULL,
+   (	EXAM_ID CHAR(6) NOT NULL,
+        SUB_ID CHAR(4) NOT NULL,
         STUD_ID CHAR(3) NOT NULL,
 		EXAM_DATE DATE NOT NULL,
-		EXAM_GRADE INTEGER NOT NULL,
+		EXAM_GRADE DECIMAL(9,2),
 	                CHECK (EXAM_GRADE BETWEEN 1 AND 10),
 	PRIMARY KEY (EXAM_ID),
 CONSTRAINT EXAMSUB FOREIGN KEY (SUB_ID)
@@ -32,112 +133,132 @@ REFERENCES STUDENTS(STUD_ID));
 
 
 CREATE TABLE RESULT
-   (	RES_ID CHAR(3) NOT NULL,
-		EXAM_ID CHAR(3) NOT NULL,
-		--ATTENDANCE DECIMAL(9,2), --посещаемость
-		--GPA DECIMAL(9,2), --ср.балл
+   (	RES_ID CHAR(7) NOT NULL,
+		EXAM_ID CHAR(6) NOT NULL,
+		ATTENDANCE DECIMAL(9,2), --посещаемость
+		GPA DECIMAL(9,2), --ср.балл
+	                CHECK (GPA BETWEEN 1 AND 10),
 	PRIMARY KEY (RES_ID),
 CONSTRAINT RESEXAM FOREIGN KEY (EXAM_ID)
 REFERENCES EXAM(EXAM_ID));
 
 
 
-
-INSERT INTO STUDENTS VALUES('REI','2A45C','Ratchet Link',79.00,210);
-INSERT INTO STUDENTS VALUES('ACI','4100Y','Widget Remover',2750.00,25);
-INSERT INTO STUDENTS VALUES('QSA','XK47 ','Reducer',355.00,38);
-INSERT INTO STUDENTS VALUES('BIC','41627','Plate',180.00,0);
-INSERT INTO STUDENTS VALUES('IMM','779C ','900-LB Brace',1875.00,9);
-
+INSERT INTO STUDENTS VALUES('SC1','Sam Clark','Denver',	1111111);
+INSERT INTO STUDENTS VALUES('MJ2','Mary Jones','New York',2222222);
+INSERT INTO STUDENTS VALUES('BS3','Bob Smith ','Chicago',3333333);
+INSERT INTO STUDENTS VALUES('LF4','Larry Fitch','Atlanta',4444444);
+INSERT INTO STUDENTS VALUES('BA5','Bill Adams ','Los Angeles',5555555);
 
 
 
-INSERT INTO SUBJECTS VALUES(22,'Denver','Western',null,300000.00,186042.00);
-INSERT INTO SUBJECTS VALUES(11,'New York','Eastern',null,575000.00,692637.00);
-INSERT INTO SUBJECTS VALUES(12,'Chicago','Eastern',null,800000.00,735042.00);
-INSERT INTO SUBJECTS VALUES(13,'Atlanta','Eastern',null,350000.00,367911.00);
-INSERT INTO SUBJECTS VALUES(21,'Los Angeles','Western',null,725000.00,835915.00);
-INSERT INTO SUBJECTS VALUES(21,'Los Angeles','Western',null,725000.00,835915.00);
-INSERT INTO SUBJECTS VALUES(21,'Los Angeles','Western',null,725000.00,835915.00);
+INSERT INTO SUBJECTS VALUES('ENG','English',	320.00,	80,	320,	null,	7.00,	5.50);
+INSERT INTO SUBJECTS VALUES('LIT','Literature',	368.00,	60,	400,	20,		6.50,	6.00);
+INSERT INTO SUBJECTS VALUES('MATH','Maths',		904.00,	90,	440,	600,	6.00,	5.50);
+INSERT INTO SUBJECTS VALUES('GEO','Geography',	320.00,	50,	null,	350,	7.50,	7.00);
+INSERT INTO SUBJECTS VALUES('HIST','History',	440.00,	50,	350,	150,	8.00,	7.50);
+INSERT INTO SUBJECTS VALUES('BIO','Biology',	536.00,	40,	430,	200,	8.00,	7.50);
+INSERT INTO SUBJECTS VALUES('CHEM','Chemistry',	880.00,	70,	480,	550,	6.00,	5.50);
 
 
 
-INSERT INTO SALESREPS VALUES (106,'Sam Clark',52,11,'VP Sales','2006-06-14',null,275000.00,299912.00);
-INSERT INTO SALESREPS VALUES (109,'Mary Jones',31,11,'Sales Rep','2007-10-12',106,300000.00,392725.00);
-INSERT INTO SALESREPS VALUES (104,'Bob Smith',33,12,'Sales Mgr','2005-05-19',106,200000.00,142594.00);
-INSERT INTO SALESREPS VALUES (108,'Larry Fitch',62,21,'Sales Mgr','2007-10-12',106,350000.00,361865.00);
-INSERT INTO SALESREPS VALUES (105,'Bill Adams',37,13,'Sales Rep','2006-02-12',104,350000.00,367911.00);
-INSERT INTO SALESREPS VALUES (102,'Sue Smith',48,21,'Sales Rep','2004-12-10',108,350000.00,474050.00);
-INSERT INTO SALESREPS VALUES (101,'Dan Roberts',45,12,'Sales Rep','2004-10-20',104,300000.00,305673.00);
-INSERT INTO SALESREPS VALUES (110,'Tom Snyder',41,null,'Sales Rep','2008-01-13',101,null,75985.00);
-INSERT INTO SALESREPS VALUES (103,'Paul Cruz',29,12,'Sales Rep','2005-03-01',104,275000.00,286775.00);
-INSERT INTO SALESREPS VALUES (107,'Nancy Angelli',49,22,'Sales Rep','2006-11-14',108,300000.00,186042.00);
+INSERT INTO EXAM VALUES ('EXENGSC1',	'ENG',	'SC1','2023-06-14',5.50);
+INSERT INTO EXAM VALUES ('EXLITMJ2',	'LIT',	'MJ2','2024-01-12',7.90);
+INSERT INTO EXAM VALUES ('EXMATHMJ2',	'MATH',	'MJ2','2023-12-19',5.00);
+INSERT INTO EXAM VALUES ('EXGEOBS3',	'GEO',	'BS3','2023-11-12',5.50);
+INSERT INTO EXAM VALUES ('EXHISTBS3',	'HIST',	'BS3','2024-02-12',8.00);
+INSERT INTO EXAM VALUES ('EXBIOBS3',	'BIO',	'BS3','2023-10-28',7.00);
+INSERT INTO EXAM VALUES ('EXENGLF4',	'ENG',	'LF4','2023-06-14',9.00);
+INSERT INTO EXAM VALUES ('EXMATHLF4',	'MATH',	'LF4','2023-12-19',9.00);
+INSERT INTO EXAM VALUES ('EXCHEMLF4',	'CHEM',	'LF4','2024-01-30',6.00);
+INSERT INTO EXAM VALUES ('EXBIOLF4',	'BIO',	'LF4','2023-10-28',8.00);
+INSERT INTO EXAM VALUES ('EXHISTBA5',	'HIST',	'BA5','2024-02-12',8.50);
+INSERT INTO EXAM VALUES ('EXGEOBA5',	'GEO',	'BA5','2023-11-12',8.00);
+INSERT INTO EXAM VALUES ('EXMATHBA5',	'MATH',	'BA5','2023-12-19',6.50);
+INSERT INTO EXAM VALUES ('EXLITBA5',	'LIT',	'BA5','2024-01-12',8.00);
+INSERT INTO EXAM VALUES ('EXENGBA5',	'ENG',	'BA5','2024-06-14',null);
 
 
----
----   OFFICE MANAGERS
----
-UPDATE OFFICES SET MGR=108 WHERE OFFICE=22;
-UPDATE OFFICES SET MGR=106 WHERE OFFICE=11;
-UPDATE OFFICES SET MGR=104 WHERE OFFICE=12;
-UPDATE OFFICES SET MGR=105 WHERE OFFICE=13;
-UPDATE OFFICES SET MGR=108 WHERE OFFICE=21;
 
----
----   CUSTOMERS
----
-INSERT INTO CUSTOMERS VALUES(2111,'JCP Inc.',103,50000.00);
-INSERT INTO CUSTOMERS VALUES(2102,'First Corp.',101,65000.00);
-INSERT INTO CUSTOMERS VALUES(2103,'Acme Mfg.',105,50000.00);
-INSERT INTO CUSTOMERS VALUES(2123,'Carter \& Sons',102,40000.00);
-INSERT INTO CUSTOMERS VALUES(2107,'Ace International',110,35000.00);
-INSERT INTO CUSTOMERS VALUES(2115,'Smithson Corp.',101,20000.00);
-INSERT INTO CUSTOMERS VALUES(2101,'Jones Mfg.',106,65000.00);
-INSERT INTO CUSTOMERS VALUES(2112,'Zetacorp',108,50000.00);
-INSERT INTO CUSTOMERS VALUES(2121,'QMA Assoc.',103,45000.00);
-INSERT INTO CUSTOMERS VALUES(2114,'Orion Corp.',102,20000.00);
-INSERT INTO CUSTOMERS VALUES(2124,'Peter Brothers',107,40000.00);
-INSERT INTO CUSTOMERS VALUES(2108,'Holm \& Landis',109,55000.00);
-INSERT INTO CUSTOMERS VALUES(2117,'J.P. Sinclair',106,35000.00);
-INSERT INTO CUSTOMERS VALUES(2122,'Three Way Lines',105,30000.00);
-INSERT INTO CUSTOMERS VALUES(2120,'Rico Enterprises',102,50000.00);
-INSERT INTO CUSTOMERS VALUES(2106,'Fred Lewis Corp.',102,65000.00);
-INSERT INTO CUSTOMERS VALUES(2119,'Solomon Inc.',109,25000.00);
-INSERT INTO CUSTOMERS VALUES(2118,'Midwest Systems',108,60000.00);
-INSERT INTO CUSTOMERS VALUES(2113,'Ian \& Schmidt',104,20000.00);
-INSERT INTO CUSTOMERS VALUES(2109,'Chen Associates',103,25000.00);
-INSERT INTO CUSTOMERS VALUES(2105,'AAA Investments',101,45000.00);
+UPDATE SUBJECTS SET EXAM_GRADE_MIN=5.00 WHERE SUB_ID='ENG';
 
----
----  ORDERS
----
-INSERT INTO ORDERS VALUES (112961,'2007-12-17',2117,106,'REI','2A44L',7,31500.00);
-INSERT INTO ORDERS VALUES (113012,'2008-01-11',2111,105,'ACI','41003',35,3745.00);
-INSERT INTO ORDERS VALUES (112989,'2008-01-03',2101,106,'FEA','114',6,1458.00);
-INSERT INTO ORDERS VALUES (113051,'2008-02-10',2118,108,'QSA','XK47',4,1420.00);
-INSERT INTO ORDERS VALUES (112968,'2007-10-12',2102,101,'ACI','41004',34,3978.00);
-INSERT INTO ORDERS VALUES (113036,'2008-01-30',2107,110,'ACI','4100Z',9,22500.00);
-INSERT INTO ORDERS VALUES (113045,'2008-02-02',2112,108,'REI','2A44R',10,45000.00);
-INSERT INTO ORDERS VALUES (112963,'2007-12-17',2103,105,'ACI','41004',28,3276.00);
-INSERT INTO ORDERS VALUES (113013,'2008-01-14',2118,108,'BIC','41003',1,652.00);
-INSERT INTO ORDERS VALUES (113058,'2008-02-23',2108,109,'FEA','112',10,1480.00);
-INSERT INTO ORDERS VALUES (112997,'2008-01-08',2124,107,'BIC','41003',1,652.00);
-INSERT INTO ORDERS VALUES (112983,'2007-12-27',2103,105,'ACI','41004',6,702.00);
-INSERT INTO ORDERS VALUES (113024,'2008-01-20',2114,108,'QSA','XK47',20,7100.00);
-INSERT INTO ORDERS VALUES (113062,'2008-02-24',2124,107,'FEA','114',10,2430.00);
-INSERT INTO ORDERS VALUES (112979,'2007-10-12',2114,102,'ACI','4100Z',6,15000.00);
-INSERT INTO ORDERS VALUES (113027,'2008-01-22',2103,105,'ACI','41002',54,4104.00);
-INSERT INTO ORDERS VALUES (113007,'2008-01-08',2112,108,'IMM','773C',3,2925.00);
-INSERT INTO ORDERS VALUES (113069,'2008-03-02',2109,107,'IMM','775C',22,31350.00);
-INSERT INTO ORDERS VALUES (113034,'2008-01-29',2107,110,'REI','2A45C',8,632.00);
-INSERT INTO ORDERS VALUES (112992,'2007-11-04',2118,108,'ACI','41002',10,760.00);
-INSERT INTO ORDERS VALUES (112975,'2007-10-12',2111,103,'REI','2A44G',6,2100.00);
-INSERT INTO ORDERS VALUES (113055,'2008-02-15',2108,101,'ACI','4100X',6,150.00);
-INSERT INTO ORDERS VALUES (113048,'2008-02-10',2120,102,'IMM','779C',2,3750.00);
-INSERT INTO ORDERS VALUES (112993,'2007-01-04',2106,102,'REI','2A45C',24,1896.00);
-INSERT INTO ORDERS VALUES (113065,'2008-02-27',2106,102,'QSA','XK47',6,2130.00);
-INSERT INTO ORDERS VALUES (113003,'2008-01-25',2108,109,'IMM','779C',3,5625.00);
-INSERT INTO ORDERS VALUES (113049,'2008-02-10',2118,108,'QSA','XK47',2,776.00);
-INSERT INTO ORDERS VALUES (112987,'2007-12-31',2103,105,'ACI','4100Y',11,27500.00);
-INSERT INTO ORDERS VALUES (113057,'2008-02-18',2111,103,'ACI','4100X',24,600.00);
-INSERT INTO ORDERS VALUES (113042,'2008-02-20',2113,101,'REI','2A44R',5,22500.00);
+
+
+INSERT INTO RESULT VALUES('RESENGSC1','EXENGSC1',		300.00,		8.00);
+INSERT INTO RESULT VALUES('RESLITMJ2','EXLITMJ2',		440.00,		7.00);
+INSERT INTO RESULT VALUES('RESMATHMJ2','EXMATHMJ2',		550.00,		6.00);
+INSERT INTO RESULT VALUES('RESGEOBS3','EXGEOBS3',		550.00,		7.50);
+INSERT INTO RESULT VALUES('RESHISTBS3','EXHISTBS3',		450.00,		5.00);
+INSERT INTO RESULT VALUES('RESBIOBS3','EXBIOBS3',		550.00,		9.00);
+INSERT INTO RESULT VALUES('RESENGLF4','EXENGLF4',		350.00,		6.00);
+INSERT INTO RESULT VALUES('RESMATHLF4','EXMATHLF4',		1100.00,	5.00);
+INSERT INTO RESULT VALUES('RESCHEMLF4','EXCHEMLF4',		900.00,		8.00);
+INSERT INTO RESULT VALUES('RESBIOLF4','EXBIOLF4',		610.00,		8.00);
+INSERT INTO RESULT VALUES('RESHISTBA5','EXHISTBA5',		600.00,		9.00);
+INSERT INTO RESULT VALUES('RESGEOBA5','EXGEOBA5',		300.00,		8.50);
+INSERT INTO RESULT VALUES('RESMATHBA5','EXMATHBA5',		1200.00,	4.00);
+INSERT INTO RESULT VALUES('RESLITBA5','EXLITBA5',		430.00,		6.00);
+INSERT INTO RESULT VALUES('RESENGBA5','EXENGBA5',		10.50,		5.00);
+
+
+
+--5.2.	Представления.
+-- Поскольку представления зависят от базовых таблиц, 
+--структурные изменения в этих таблицах могут привести 
+--к необходимости обновления или повторного создания представлений.
+--1. студенты, которые не сдали экзамены
+CREATE VIEW View1 AS
+SELECT E.STUD_ID, E.SUB_ID, R.EXAM_ID, R.GPA
+FROM Result R join Exam E
+ON R.EXAM_ID = O.EXAM_ID
+WHERE E.EXAM_GRADE is null;
+GO
+
+--показать представление
+SELECT * FROM View1;
+
+--2.Экзамены, которые проходят в 2024
+create view View2 as
+select EXAM_ID, SUB_ID, STUD_ID, EXAM_DATE
+from EXAM
+where year(EXAM_DATE) = 2024;
+--ИЛИ
+--where EXAM_DATE between '2024-01-01' and '2024-12-31';
+go
+
+--обновить представление (добавить оценки EXAM_GRADE) 
+--Если представление состоит из нескольких таблиц, 
+--его нельзя обновить из-за неоднозначности отношений между таблицами
+ALTER VIEW View2 AS
+select EXAM_ID, SUB_ID, STUD_ID, EXAM_DATE, EXAM_GRADE
+from EXAM
+where year(EXAM_DATE) = 2024;
+--ИЛИ
+--where EXAM_DATE between '2024-01-01' and '2024-12-31';
+go
+
+--удалить представление
+DROP VIEW View1;
+DROP VIEW View2;
+
+
+
+--5.3.	Индексы.
+
+
+
+
+--5.4.	Процедуры (все обновление данных в БД допускаются только через процедуры. 
+--Использовать обработку ошибок, курсоры и транзакции там, где это необходимо.)
+--5.5.	Функции.
+--5.6.	Триггеры. 
+--5.7.	Выдать привилегии на запуск процедур и функций.
+--6.	Добавить в скрипт проверку для всех созданных программных объектов.
+--7.	Импортировать данные из внешних источников. Импорт должен быть отражен в скрипте 
+--или в пояснительной записке.
+--8.	Создать процедуру для экспорта данных. Экспорт должен быть отражен в скрипте 
+--или в пояснительной записке.
+--9.	Настроить резервное копирование базы данных. 
+--Резервное копирование должно быть отражено в скрипте или в пояснительной записке.
+--10.	Продемонстрировать преподавателю готовый скрипт и записку.
+
