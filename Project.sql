@@ -1,4 +1,4 @@
-﻿--Лабораторная работа № 15 – СУБД – 10 часов
+--Лабораторная работа № 15 – СУБД – 10 часов
 
 --Итоговое задание.
 --1.	Уточнить свой вариант у преподавателя. Результатом итогового задания являются скрипт 
@@ -112,13 +112,13 @@ CREATE TABLE SUBJECTS
 		GPA_MIN DECIMAL(9,2), --минимальный ср.балл
 	                CHECK (GPA_MIN BETWEEN 1 AND 10),
 		EXAM_GRADE_MIN DECIMAL(9,2) NOT NULL,
-	                CHECK (GRADE_MIN BETWEEN 1 AND 10),
+	                CHECK (EXAM_GRADE_MIN BETWEEN 1 AND 10),
 	PRIMARY KEY (SUB_ID));
 
 
 
 CREATE TABLE EXAM
-   (	EXAM_ID CHAR(6) NOT NULL,
+   (	EXAM_ID CHAR(10) NOT NULL,
         SUB_ID CHAR(4) NOT NULL,
         STUD_ID CHAR(3) NOT NULL,
 		EXAM_DATE DATE NOT NULL,
@@ -133,8 +133,8 @@ REFERENCES STUDENTS(STUD_ID));
 
 
 CREATE TABLE RESULT
-   (	RES_ID CHAR(7) NOT NULL,
-		EXAM_ID CHAR(6) NOT NULL,
+   (	RES_ID CHAR(10) NOT NULL,
+		EXAM_ID CHAR(10) NOT NULL,
 		ATTENDANCE DECIMAL(9,2), --посещаемость
 		GPA DECIMAL(9,2), --ср.балл
 	                CHECK (GPA BETWEEN 1 AND 10),
@@ -143,12 +143,12 @@ CONSTRAINT RESEXAM FOREIGN KEY (EXAM_ID)
 REFERENCES EXAM(EXAM_ID));
 
 
-
 INSERT INTO STUDENTS VALUES('SC1','Sam Clark','Denver',	1111111);
 INSERT INTO STUDENTS VALUES('MJ2','Mary Jones','New York',2222222);
 INSERT INTO STUDENTS VALUES('BS3','Bob Smith ','Chicago',3333333);
 INSERT INTO STUDENTS VALUES('LF4','Larry Fitch','Atlanta',4444444);
 INSERT INTO STUDENTS VALUES('BA5','Bill Adams ','Los Angeles',5555555);
+select* from STUDENTS;
 
 
 
@@ -159,6 +159,11 @@ INSERT INTO SUBJECTS VALUES('GEO','Geography',	320.00,	50,	null,	350,	7.50,	7.00
 INSERT INTO SUBJECTS VALUES('HIST','History',	440.00,	50,	350,	150,	8.00,	7.50);
 INSERT INTO SUBJECTS VALUES('BIO','Biology',	536.00,	40,	430,	200,	8.00,	7.50);
 INSERT INTO SUBJECTS VALUES('CHEM','Chemistry',	880.00,	70,	480,	550,	6.00,	5.50);
+select* from SUBJECTS;
+
+
+UPDATE SUBJECTS SET EXAM_GRADE_MIN=5.00 WHERE SUB_ID='ENG';
+select* from SUBJECTS;
 
 
 
@@ -177,10 +182,7 @@ INSERT INTO EXAM VALUES ('EXGEOBA5',	'GEO',	'BA5','2023-11-12',8.00);
 INSERT INTO EXAM VALUES ('EXMATHBA5',	'MATH',	'BA5','2023-12-19',6.50);
 INSERT INTO EXAM VALUES ('EXLITBA5',	'LIT',	'BA5','2024-01-12',8.00);
 INSERT INTO EXAM VALUES ('EXENGBA5',	'ENG',	'BA5','2024-06-14',null);
-
-
-
-UPDATE SUBJECTS SET EXAM_GRADE_MIN=5.00 WHERE SUB_ID='ENG';
+select* from EXAM;
 
 
 
@@ -199,6 +201,7 @@ INSERT INTO RESULT VALUES('RESGEOBA5','EXGEOBA5',		300.00,		8.50);
 INSERT INTO RESULT VALUES('RESMATHBA5','EXMATHBA5',		1200.00,	4.00);
 INSERT INTO RESULT VALUES('RESLITBA5','EXLITBA5',		430.00,		6.00);
 INSERT INTO RESULT VALUES('RESENGBA5','EXENGBA5',		10.50,		5.00);
+select* from RESULT;
 
 
 
@@ -208,9 +211,9 @@ INSERT INTO RESULT VALUES('RESENGBA5','EXENGBA5',		10.50,		5.00);
 --к необходимости обновления или повторного создания представлений.
 --1. студенты, которые не сдали экзамены
 CREATE VIEW View1 AS
-SELECT E.STUD_ID, E.SUB_ID, R.EXAM_ID, R.GPA
+SELECT E.STUD_ID, E.SUB_ID, R.EXAM_ID, R.GPA, E.EXAM_GRADE
 FROM Result R join Exam E
-ON R.EXAM_ID = O.EXAM_ID
+ON R.EXAM_ID = E.EXAM_ID
 WHERE E.EXAM_GRADE is null;
 GO
 
@@ -226,16 +229,18 @@ where year(EXAM_DATE) = 2024;
 --where EXAM_DATE between '2024-01-01' and '2024-12-31';
 go
 
---обновить представление (добавить оценки EXAM_GRADE) 
+--обновить представление (год изменен на 2023 и добавить оценки EXAM_GRADE) 
 --Если представление состоит из нескольких таблиц, 
 --его нельзя обновить из-за неоднозначности отношений между таблицами
 ALTER VIEW View2 AS
 select EXAM_ID, SUB_ID, STUD_ID, EXAM_DATE, EXAM_GRADE
 from EXAM
-where year(EXAM_DATE) = 2024;
+where year(EXAM_DATE) = 2023;
 --ИЛИ
---where EXAM_DATE between '2024-01-01' and '2024-12-31';
+--where EXAM_DATE between '2023-01-01' and '2023-12-31';
 go
+
+SELECT * FROM View2;
 
 --удалить представление
 DROP VIEW View1;
@@ -244,7 +249,16 @@ DROP VIEW View2;
 
 
 --5.3.	Индексы.
+--найти студентов, которые на экзамене по матем получили больше проходного балла (5,5)
+select* from EXAM;
+select* from SUBJECTS;
 
+select E.STUD_ID, S.SUB_ID, S.SUB_NAME, S.EXAM_GRADE_MIN, E.EXAM_GRADE --0.0066022
+from EXAM E join SUBJECTS S
+on E.SUB_ID = S.SUB_ID
+where E.SUB_ID = 'MATH' and E.EXAM_GRADE > S.EXAM_GRADE_MIN;
+create index idx_EXAM on EXAM(EXAM_GRADE) include (SUB_ID);
+create index idx_SUB on SUBJECTS(EXAM_GRADE_MIN);
 
 
 
