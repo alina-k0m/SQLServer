@@ -7,6 +7,21 @@
 --2.	Спроектировать базу данных по своему варианту. 
 --2.1.	Перечислить решаемые задачи. Среди решаемых задач должны быть пространственные данные 
 --и импорт-экспорт из/в XML.
+--Пространственные данные обычно содержат информацию о географическом положении и форме объектов. 
+--В Microsoft SQL Server для хранения таких данных используются типы `geometry` для плоских карт 
+--и `geography` для хранения объектов на земной поверхности.
+--Экспорт данных из MS SQL в XML
+SELECT *
+FROM RESULT
+FOR XML PATH('row'), ROOT('rows') --FOR XML позволяет форматировать результаты запроса XML напрямую в SQL запросе
+
+--Импорт XML в MS SQL
+INSERT INTO RESULT (XmlCol)
+SELECT *
+FROM OPENROWSET(
+    BULK 'C:\Users\Alina\Microsoft SQL Server Management Studio 19\SQLServer\fileFROM.xml',
+    SINGLE_BLOB) --SINGLE_BLOB - исользуя это можно избежать несоответствия между кодировкой XML-документа и строковой кодовой страницой, подразумеваемой сервером
+AS x;
 
 
 
@@ -250,15 +265,23 @@ DROP VIEW View2;
 
 --5.3.	Индексы.
 --найти студентов, которые на экзамене по матем получили больше проходного балла (5,5)
-select* from EXAM;
-select* from SUBJECTS;
+select * from EXAM;
+select * from SUBJECTS;
+select * from RESULT --0.0032985 --0.0032985
+where GPA > 6.00;
+--средняя по группе
+select RES_ID, avg(GPA) --0.0033 --0.0033
+from RESULT
+group by RES_ID;
+create index idx_RES_GPA on RESULT (GPA);
 
-select E.STUD_ID, S.SUB_ID, S.SUB_NAME, S.EXAM_GRADE_MIN, E.EXAM_GRADE --0.0066022
-from EXAM E join SUBJECTS S
-on E.SUB_ID = S.SUB_ID
-where E.SUB_ID = 'MATH' and E.EXAM_GRADE > S.EXAM_GRADE_MIN;
-create index idx_EXAM on EXAM(EXAM_GRADE) include (SUB_ID);
-create index idx_SUB on SUBJECTS(EXAM_GRADE_MIN);
+
+--select E.STUD_ID, S.SUB_ID, S.SUB_NAME, S.EXAM_GRADE_MIN, E.EXAM_GRADE --0.0066022 --0.013
+--from EXAM E join SUBJECTS S
+--on E.SUB_ID = S.SUB_ID
+--where E.SUB_ID = 'MATH' and E.EXAM_GRADE > S.EXAM_GRADE_MIN;
+--create index idx_EXAM_EXAM_GRADE_SUB_ID on EXAM(EXAM_GRADE) include (SUB_ID);
+--create index idx_SUB_EXAM_GRADE_MIN on SUBJECTS(EXAM_GRADE_MIN);
 
 
 
