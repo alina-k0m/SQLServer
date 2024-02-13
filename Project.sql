@@ -418,25 +418,204 @@ GO
 
 --Использовать табличную функцию:
 	SELECT * FROM dbo.GetListStudents('');
+	GO
 
 
 
 --5.6.	Триггеры. 
+--создание таблицы, в которую триггером добавляются записи об изменениях
+CREATE TABLE StudentsAudit
+     (	STUD_ID CHAR(3) NOT NULL,
+		STUD_NAME VARCHAR(20) NOT NULL,
+		ADDRESS VARCHAR(50) NOT NULL,
+		PHONE INTEGER NOT NULL,
+	PRIMARY KEY (STUD_ID));
+GO
+select * from STUDENTS;
+select * from StudentsAudit;
+GO
+-- создание AFTER INSERT триггера (добавление)
+CREATE TRIGGER trg_Insert ON STUDENTS
+AFTER INSERT
+AS
+BEGIN
+    -- при добавлении данных в таблице STUDENTS, старые данные сохраняются в таблицу StudentsAudit
+    INSERT INTO StudentsAudit (STUD_ID, STUD_NAME, ADDRESS)
+    SELECT i.STUD_ID, 'INSERT', GETDATE()
+    FROM inserted i; --inserted - таблица, доступная внутри триггера, которая содержит копии всех строк, подвергающихся операции INSERT
+END;
+GO
 
+-- создание AFTER UPDATE триггера (обновление)
+CREATE TRIGGER trg_Update ON STUDENTS
+AFTER UPDATE
+AS
+BEGIN
+    -- при обновлении данных в таблице STUDENTS, старые данные сохраняются в таблицу StudentsAudit
+    INSERT INTO StudentsAudit (STUD_ID, STUD_NAME, ADDRESS, PHONE)
+	SELECT d.STUD_ID, 'UPDATE', GETDATE(), CONCAT(',', d.STUD_ID, d.STUD_NAME, d.ADDRESS, d.PHONE)
+    FROM deleted d;
+END;
+GO
+
+-- создание AFTER DELETE триггера (удаление)
+CREATE TRIGGER trg_Delete ON STUDENTS
+AFTER DELETE
+AS
+BEGIN
+    -- при удалении данных в таблице STUDENTS, старые данные сохраняются в таблицу StudentsAudit
+    INSERT INTO StudentsAudit (STUD_ID, STUD_NAME, ADDRESS)
+    SELECT d.STUD_ID, 'DELETE', GETDATE()
+    FROM deleted d;
+END;
+GO
+
+--Удаление триггера
+DROP TRIGGER trg_Insert;
+DROP TRIGGER trg_Update;
+DROP TRIGGER trg_Delete;
+
+
+--Отключение и включение триггера
+DISABLE TRIGGER trg_Insert ON STUDENTS; --выкл
+ENABLE TRIGGER trg_Insert ON STUDENTS; --вкл
 
 
 
 --5.7.	Выдать привилегии на запуск процедур и функций.
-
+GRANT EXECUTE ON
+dbo.Procedure1 TO ADMIN;
 
 
 
 --6.	Добавить в скрипт проверку для всех созданных программных объектов.
---7.	Импортировать данные из внешних источников. Импорт должен быть отражен в скрипте 
---или в пояснительной записке.
---8.	Создать процедуру для экспорта данных. Экспорт должен быть отражен в скрипте 
---или в пояснительной записке.
---9.	Настроить резервное копирование базы данных. 
---Резервное копирование должно быть отражено в скрипте или в пояснительной записке.
---10.	Продемонстрировать преподавателю готовый скрипт и записку.
+--1. Проверка существования таблицы:
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'STUDENTS')
+BEGIN
+    -- Таблица существует
+    PRINT 'Таблица существует.'
+END
+ELSE
+BEGIN
+    -- Таблица не найдена
+    PRINT 'Таблица не найдена.'
+END
 
+--2. Проверка существования хранимой процедуры:
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'Procedure1')
+BEGIN
+    -- Хранимая процедура существует
+    PRINT 'Хранимая процедура существует.'
+END
+ELSE
+BEGIN
+    -- Хранимая процедура не найдена
+    PRINT 'Хранимая процедура не найдена.'
+END
+
+--3. Проверка существования функции:
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID('dbo.GetFormattedDate'))
+BEGIN
+    -- Функция существует
+    PRINT 'Функция существует.'
+END
+ELSE
+BEGIN
+    -- Функция не найдена
+    PRINT 'Функция не найдена.'
+END
+
+--4. Проверка существования триггера:
+IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'trg_Update')
+BEGIN
+    -- Триггер существует
+    PRINT 'Триггер существует.'
+END
+ELSE
+BEGIN
+    -- Триггер не найден
+    PRINT 'Триггер не найден.'
+END
+
+--5. Проверка существования представления:
+IF EXISTS (SELECT * FROM sys.views WHERE name = 'View2')
+BEGIN
+    -- Представление существует
+    PRINT 'Представление существует.'
+END
+ELSE
+BEGIN
+    -- Представление не найдено
+    PRINT 'Представление не найдено.'
+END
+
+
+
+--7.	Импортировать данные из внешних источников. 
+--Импорт должен быть отражен в скрипте или в пояснительной записке.
+--1. Откройте SQL Server Management Studio (SSMS)** и подключитесь к серверу, на который хотите импортировать данные.
+--2. Щелкните правой кнопкой мыши по базе данных, в которую хотите импортировать данные, выберите "Tasks" > "Import Data...".
+--3. Мастер импорта данных запустится. Щелкните "Next" для продолжения.
+--4. Выберите источник данных из предоставленного списка и настройте его параметры.
+--5. Выберите целевую базу данных и таблицу.
+--6. Можно настроить отображение (mapping) столбцов, если это необходимо.
+--7. Последние шаги мастера позволяют выполнить импорт сразу или сохранить его как SSIS пакет для последующего использования.
+--8. Просмотрите сводку и нажмите "Finish", чтобы выполнить импорт.
+--BULK INSERT: для импорта данных из файла в SQL Server таблицу.
+
+
+
+--8.	Создать процедуру для экспорта данных. 
+--Экспорт должен быть отражен в скрипте или в пояснительной записке.
+USE [2023_Komarovskaya_Project];
+GO
+
+-- Создаем процедуру экспорта
+CREATE PROCEDURE ExportData
+    @tableName VARCHAR(256), -- имя таблицы, данные которой вы хотите экспортировать
+    @exportPath NVARCHAR(256) --путь файла, куда будет произведен экспорт данных
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @sqlCmd NVARCHAR(MAX) = 'sqlcmd -S ' 
+	+ @@SERVERNAME 
+	+ ' -d ' 
+	+ DB_NAME() 
+	+ ' -E -Q "SET NOCOUNT ON; SELECT * FROM ' 
+	+ @tableName 
+	+ '" -o "' 
+	+ @exportPath 
+	+ '" -h-1 -s"," -w 700';
+    EXEC xp_cmdshell @sqlCmd;
+
+    SET NOCOUNT OFF;
+END;
+GO
+
+--Перед тем, как использовать эту процедуру, удостоверьтесь, что служба 'xp_cmdshell' включена:
+-- Активируем xp_cmdshell
+--НЕ НАЖИМАТЬ
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+--выполняе процедуру
+EXEC ExportData @tableName = 'Export', @exportPath = 'C:\Users\Alina\Microsoft SQL Server Management Studio 19\SQLServer\Export.csv';
+
+
+
+--9.	Настроить резервное копирование базы данных. 
+--Резервное копирование должно быть отражено в скрипте или 
+--в пояснительной записке.
+BACKUP DATABASE [2023_Komarovskaya_08]
+TO DISK = 'C:\Users\Alina\Microsoft SQL Server Management Studio 19\SQLServer\BACKUP.bak'
+WITH NOFORMAT, -- NOFORMAT говорит о том, что не нужно форматировать накопитель, использовать существующий.
+	NOINIT,-- указывает, что файл резервной копии не должен инициализироваться заново, но новая резервная копия будет добавляться в существующий файл.
+    SKIP, -- означает пропустить проверку метки резервной медии и метки окончания ленты.
+-- `NOREWIND` и `NOUNLOAD` применяются в случае использования ленточных накопителей, инструктируя SQL Server не перематывать и не извлекать ленту после окончания резервного копирования.
+	NOREWIND, 
+	NOUNLOAD, 
+	STATS = 10;-- определяет процент выполнения операции, который будет отображаться во время резервного копирования.
+-- STATS = 10 отображает прогресс выполнения каждые 10%.
