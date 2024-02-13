@@ -10,6 +10,17 @@
 --Пространственные данные обычно содержат информацию о географическом положении и форме объектов. 
 --В Microsoft SQL Server для хранения таких данных используются типы `geometry` для плоских карт 
 --и `geography` для хранения объектов на земной поверхности.
+--Geography type point object (Los Angeles)
+DECLARE @g geography;  
+SET @g = geography::STGeomFromText('POINT (-118.2423 34.0225)', 4326)
+SELECT @g
+
+--Geometry type point object
+DECLARE @h geometry;  
+SET @h = geometry::STGeomFromText('POINT (-118.2423 34.0225)', 4326)
+SELECT @h
+
+
 --Экспорт данных из MS SQL в XML
 SELECT *
 FROM RESULT
@@ -63,9 +74,7 @@ AS x;
 --4.	Настроить безопасность: 
 --4.1.	Создать логины и пользователей. 
 --создание логина
-USE [2023_Komarovskaya_Project]
-GO
-	CREATE LOGIN [NewLogin] WITH PASSWORD = N'Password123!', 
+CREATE LOGIN [NewLogin] WITH PASSWORD = N'Password123!', 
 	DEFAULT_DATABASE=[2023_Komarovskaya_Project], 
 	CHECK_EXPIRATION=OFF, --не применять политику истечения срока действия пароля
 	CHECK_POLICY=OFF --не проверять минимальное количество символов пароля
@@ -89,19 +98,58 @@ GO
 
 
 --4.2.	Создать роли.
-USE [2023_Komarovskaya_Project];
-GO
-	CREATE ROLE NameRole
-	AUTHORIZATION NameUser; --если не писать AUTHORIZATION NameUser, то не будет назначено владельца, владелец по умолчанию - dbo
+--CREATE ROLE NameRole
+--AUTHORIZATION NameUser; --если не писать AUTHORIZATION NameUser, то не будет назначено владельца, владелец по умолчанию - dbo
+--GO
+
+----назначить разрешения роли
+--GRANT SELECT ON [dbo].[STUDENTS] TO NameRole;
+--GO
+
+----добавить пользователя в роль
+--ALTER ROLE NameRole 
+--ADD MEMBER NameOtherUser; --NameOtherUser - пользователь, который должен войти в эту роль.
+--GO
+CREATE ROLE ADMIN
+CREATE ROLE STUDENT
+CREATE ROLE TEACHER;
 GO
 
---назначить разрешения роли
-	GRANT SELECT ON [dbo].[STUDENTS] TO NameRole;
+ALTER ROLE db_datareader ADD MEMBER STUDENT
 GO
-
---добавить пользователя в роль
-	ALTER ROLE NameRole 
-	ADD MEMBER NameOtherUser; --NameOtherUser - пользователь, который должен войти в эту роль.
+-- предоставление права на чтение для STUDENT на таблицу RESULT
+GRANT SELECT ON RESULT TO STUDENT;
+GO
+ALTER ROLE db_datareader ADD MEMBER TEACHER
+GO
+ALTER ROLE db_datawriter ADD MEMBER TEACHER
+GO
+-- предоставление права на чтение и редактирование для TEACHER на таблицу RESULT и EXAM
+GRANT SELECT ON RESULT TO STUDENT;
+GO
+GRANT SELECT ON EXAM TO STUDENT;
+GO
+ALTER ROLE db_datareader ADD MEMBER ADMIN
+GO
+ALTER ROLE db_datawriter ADD MEMBER ADMIN
+GO
+ALTER ROLE db_securityadmin ADD MEMBER ADMIN --изменять членство в роли (только для настраиваемых ролей) и управлять разрешениями
+GO
+ALTER ROLE db_accessadmin ADD MEMBER ADMIN --добавлять или удалять доступ к базе данных
+GO
+ALTER ROLE db_backupoperator ADD MEMBER ADMIN --могут создавать резервные копии базы данных
+GO
+--предоставление права для ADMIN
+GRANT SELECT ON STUDENTS TO ADMIN;
+GO
+GRANT SELECT ON SUBJECTS TO ADMIN;
+GO
+GRANT SELECT ON EXAM TO ADMIN;
+GO
+GRANT SELECT ON RESULT TO ADMIN;
+GO
+-- удаление права на чтение для STUDENT на таблицу RESULT
+REVOKE SELECT ON RESULT FROM STUDENT;
 GO
 
 
@@ -287,9 +335,102 @@ create index idx_RES_GPA on RESULT (GPA);
 
 --5.4.	Процедуры (все обновление данных в БД допускаются только через процедуры. 
 --Использовать обработку ошибок, курсоры и транзакции там, где это необходимо.)
+CREATE PROCEDURE Procedure1
+AS
+BEGIN
+    BEGIN TRANSACTION -- Начало транзакции
+
+    BEGIN TRY
+        -- Объявление курсора для построчного чтения из таблицы
+        DECLARE myCursor CURSOR FOR
+            SELECT * FROM RESULT WHERE GPA >= 9.00
+       
+        OPEN myCursor -- Открытие курсора и начало чтения
+
+        DECLARE @GPA DECIMAL
+
+        FETCH NEXT FROM myCursor INTO @GPA -- Чтение первой строки
+
+        WHILE @@FETCH_STATUS = 0 -- Проход по строкам таблицы (читает, пока 0; перестает читать, когда 1)
+
+        BEGIN
+            -- обновление ATTENDANCE
+            UPDATE RESULT
+            SET ATTENDANCE = 2000.00
+            WHERE GPA = @GPA
+
+            FETCH NEXT FROM myCursor INTO @GPA -- Чтение следующей строки
+
+        END
+
+        CLOSE myCursor -- Закрытие курсора и освобождение ресурсов
+        DEALLOCATE myCursor --освобождение ресурсов
+
+        COMMIT TRANSACTION-- Если все прошло успешно, подтвердить транзакцию
+    END TRY
+    BEGIN CATCH
+        -- Если произошла ошибка, закрыть курсор и откатить транзакцию
+        IF CURSOR_STATUS('global','myCursor') >= 0
+        BEGIN
+            CLOSE myCursor
+            DEALLOCATE myCursor
+        END
+        ROLLBACK TRANSACTION-- Откат транзакции
+		
+        -- Получение информации об ошибке и её выброс
+        DECLARE @ErrorNumber INT = ERROR_NUMBER()
+        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE()
+        DECLARE @ErrorSeverity INT = ERROR_SEVERITY()
+        DECLARE @ErrorState INT = ERROR_STATE()
+
+        RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState)
+    END CATCH
+END
+GO
+
+
+
 --5.5.	Функции.
+--1. Скалярная функция (возвращает одно значение):
+CREATE FUNCTION dbo.GetFormattedDate(@Date DATETIME)
+RETURNS VARCHAR(30)
+AS
+BEGIN
+    -- Возвращает дату в формате 'DD-MM-YYYY'
+    RETURN CONVERT(VARCHAR(10), @Date, 105)
+END
+GO
+
+--Чтобы использовать эту функцию, надо ее вызвать:
+	SELECT dbo.GetFormattedDate(GETDATE()) AS FormattedDate
+
+
+--2. Табличная функция (возвращает набор строк):
+CREATE FUNCTION dbo.GetListStudents(@ListStudents NVARCHAR(50))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT *
+    FROM STUDENTS
+);
+GO
+
+--Использовать табличную функцию:
+	SELECT * FROM dbo.GetListStudents('');
+
+
+
 --5.6.	Триггеры. 
+
+
+
+
 --5.7.	Выдать привилегии на запуск процедур и функций.
+
+
+
+
 --6.	Добавить в скрипт проверку для всех созданных программных объектов.
 --7.	Импортировать данные из внешних источников. Импорт должен быть отражен в скрипте 
 --или в пояснительной записке.
