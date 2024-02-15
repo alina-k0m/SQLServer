@@ -315,13 +315,13 @@ DROP VIEW View2;
 --найти студентов, которые на экзамене по матем получили больше проходного балла (5,5)
 select * from EXAM;
 select * from SUBJECTS;
-select * from RESULT --0.0032985 --0.0032985
-where GPA > 6.00;
+select GPA, RES_ID from RESULT --0.0032985 --0.0032831
+where GPA = 4.00;
 --средняя по группе
 select RES_ID, avg(GPA) --0.0033 --0.0033
 from RESULT
 group by RES_ID;
-create index idx_RES_GPA on RESULT (GPA);
+create index idx_RES_GPA on RESULT (GPA) include (RES_ID);
 
 
 --select E.STUD_ID, S.SUB_ID, S.SUB_NAME, S.EXAM_GRADE_MIN, E.EXAM_GRADE --0.0066022 --0.013
@@ -343,7 +343,7 @@ BEGIN
     BEGIN TRY
         -- Объявление курсора для построчного чтения из таблицы
         DECLARE myCursor CURSOR FOR
-            SELECT * FROM RESULT WHERE GPA >= 9.00
+            SELECT RES_ID, GPA FROM RESULT WHERE GPA >= 9.00
        
         OPEN myCursor -- Открытие курсора и начало чтения
 
@@ -387,6 +387,44 @@ BEGIN
     END CATCH
 END
 GO
+
+
+create procedure add_student 
+	@id CHAR(3),
+	@name VARCHAR(20),
+	@address VARCHAR(50),
+	@phone INTEGER
+as
+begin 
+	begin try
+		insert into STUDENTS values (@id, @name, @address, @phone)
+	end try
+	begin catch
+	declare @error_code int = @@ERROR;
+		if @error_code = 2627 print 'Dublicate student!';
+		if @error_code = 947 print 'No such rep!';
+		end catch
+end;
+go
+
+--вызов процедуры
+exec add_student 'I11', 'Ivan', 'Minsk', 1234567;
+		insert into STUDENTS values ('II0', 'Ivan', 'Minsk', 1234567)
+
+go
+
+select * from STUDENTS
+
+CREATE PROCEDURE proc_STUDENTS
+AS
+SELECT
+   *
+FROM STUDENTS;
+GO
+--вызов процедуры
+exec proc_STUDENTS;
+go
+
 
 
 
